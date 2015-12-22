@@ -1,0 +1,103 @@
+<?php
+
+/**
+ * @file
+ * Scrollspy for SGP Books.
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function twemex_block_info() {
+  return array(
+    'scrollspynav' => array(
+      'info' => t('ScrollSpy navigation'),
+      'cache' => DRUPAL_CACHE_PER_PAGE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function twemex_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'scrollspynav':
+      $markup = _twemex_get_region_markup('above_content');
+      if (empty($markup)) {
+	$markup = _twemex_get_region_markup('content');
+        if (empty($markup)) {
+          break;
+        }
+      }
+      $anchors = _twemex_extract_anchors($markup);
+      if (empty($anchors) || !is_array($anchors)) {
+	break;
+      }
+      
+      // Everything is ok -> generate block content:
+      $content = '';
+      $content .= '<div data-spy="affix" data-offset-top="100">';
+      $content .= '<div class="hidden-md hidden-lg"><select id="scrollspy-select" onchange="location = this.options[this.selectedIndex].value;">';
+      foreach ($anchors as $item) {
+        $content .= '<option value="' . $item['href'] . '">' . $item['title'] . '</option>';
+      }
+      $content .= '</select></div>';
+
+      $content .= '<nav id="scrollspynav" class="hidden-xs hidden-sm" ><ul class="nav nav-stacked">';
+      //$content .= '<li><a href="#jump-up"><i class="icon icon-chevron-up pull-right"></i>' . t('Up') . '</a></li>';
+      foreach ($anchors as $item) {
+        $content .= '<li><a href="' . $item['href'] . '"><i class="icon icon-chevron-right pull-right"></i>' . $item['title'] . '</a></li>';
+      }
+      //$content .= '<li><a href="#jump-down"><i class="icon icon-chevron-down pull-right"></i>' . t('Down') . '</a></li>';
+      $content .= '</ul></nav>';
+      $content .= '</div>';
+      $block['content'] = $content;
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Implements template_preprocess_html().
+ */
+function twemex_preprocess_html(&$vars) {
+  $vars['attributes_array']['data-spy'] = 'scroll';
+  $vars['attributes_array']['data-target'] = '#scrollspynav';
+}
+
+/**
+ * Implements template_process_html().
+ */
+function twemex_process_html(&$vars) {
+  $vars['attributes'] = drupal_attributes($vars['attributes_array']);
+  $vars['page_top'] = '<a id="jump-up" class="element-invisible"></a>' . $vars['page_top'];
+  $vars['page_bottom'] .= '<a id="jump-down" class="element-invisible"></a>';
+}
+
+/**
+ * Helper function: returns the markup for a specified region.
+ */
+function _twemex_get_region_markup($region) {
+  $blocks = block_list($region);
+  $renderable = _block_get_renderable_array($blocks);
+  return drupal_render($renderable);
+}
+
+/**
+ * Helper function: returns the list of heading anchors in the markup.
+ */
+function _twemex_extract_anchors($markup) {
+//  $matches[] = array();
+  $pattern = "/<a id=\"([^\"]+)\" title=\"([^\"]+)\" data-depth=\"[1,2]\" class=\"title-anchor\"><\/a>/";
+  preg_match_all($pattern, $markup, $matches);
+  $anchors = array();
+  foreach ($matches[1] as $i => $id) {
+    $anchors[] = array(
+      'href' => '#' . $id,
+      'title' => $matches[2][$i],
+    );
+  }
+  return $anchors;
+}

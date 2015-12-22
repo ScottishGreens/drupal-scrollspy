@@ -1,0 +1,5 @@
+name = Scrollspy
+description = Adds Bootstrap Scrollsky block functionality.
+package = User interface
+core = 7.x
+dependencies[] = block
